@@ -1,0 +1,17 @@
+//
+//  Card.swift
+//  PlayHub
+//
+
+import Foundation
+
+
+struct Card: Identifiable {
+
+
+    let id = UUID()
+
+
+    var isLit: Bool = false
+
+}
