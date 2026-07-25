@@ -23,7 +23,10 @@ final class TriviaAPI {
 
 
 
-    func fetchQuestions()
+    func fetchQuestions(
+        difficulty: GameDifficulty,
+        amount: Int
+    )
     async throws
     -> [TriviaQuestion] {
 
@@ -32,7 +35,7 @@ final class TriviaAPI {
         guard let url =
                 URL(
                     string:
-                    "https://opentdb.com/api.php?amount=10&type=multiple"
+                    "https://opentdb.com/api.php?amount=\(amount)&difficulty=\(difficulty.apiValue)&type=multiple"
                 )
 
         else {

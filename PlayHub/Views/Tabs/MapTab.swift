@@ -19,24 +19,8 @@ struct MapTab: View {
 
 
 
-    @State private var camera:
-    MapCameraPosition = .region(
-
-        MKCoordinateRegion(
-
-            center: CLLocationCoordinate2D(
-                latitude: 6.9271,
-                longitude: 79.8612
-            ),
-
-            span: MKCoordinateSpan(
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05
-            )
-
-        )
-
-    )
+    // Do not default to Colombo; MapKit follows the device's location instead.
+    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
 
 
 
@@ -277,7 +261,7 @@ struct MapTab: View {
         Button {
 
 
-            locationService.startUpdating()
+            locationService.requestCurrentLocation()
 
 
 

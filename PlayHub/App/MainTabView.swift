@@ -72,7 +72,7 @@ struct MainTabView: View {
 
 
         appearance.stackedLayoutAppearance.selected.iconColor =
-            UIColor.systemMint
+            UIColor.white
 
 
 
@@ -249,7 +249,7 @@ struct MainTabView: View {
 
 
             .tint(
-                .mint
+                .white
             )
 
 

@@ -21,6 +21,8 @@ final class LocationService: NSObject, ObservableObject {
     private let manager =
     CLLocationManager()
 
+    private var locationRequestStartedAt: Date?
+
 
 
 
@@ -90,8 +92,7 @@ final class LocationService: NSObject, ObservableObject {
         case .authorizedAlways,
              .authorizedWhenInUse:
 
-
-            startUpdating()
+            requestCurrentLocation()
 
 
 
@@ -131,6 +132,13 @@ final class LocationService: NSObject, ObservableObject {
         manager.startUpdatingLocation()
 
 
+    }
+
+    /// Starts a short high-accuracy refresh. A cached or low-accuracy result
+    /// is ignored until Core Location delivers a recent position.
+    func requestCurrentLocation() {
+        locationRequestStartedAt = Date()
+        manager.startUpdatingLocation()
     }
 
 
@@ -190,8 +198,7 @@ CLLocationManagerDelegate {
         case .authorizedAlways,
              .authorizedWhenInUse:
 
-
-            startUpdating()
+            requestCurrentLocation()
 
 
 
@@ -237,6 +244,12 @@ CLLocationManagerDelegate {
 
         }
 
+        guard newLocation.horizontalAccuracy >= 0,
+              newLocation.horizontalAccuracy <= 100,
+              newLocation.timestamp >= (locationRequestStartedAt ?? .distantPast) else {
+            return
+        }
+
 
 
 
@@ -248,6 +261,9 @@ CLLocationManagerDelegate {
 
             self.location =
             newLocation
+
+            self.manager.stopUpdatingLocation()
+            self.locationRequestStartedAt = nil
 
 
 

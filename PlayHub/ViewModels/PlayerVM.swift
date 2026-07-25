@@ -374,4 +374,10 @@ extension Notification.Name {
     )
 
 
+    static let gameHistoryCleared =
+    Notification.Name(
+        "gameHistoryCleared"
+    )
+
+
 }

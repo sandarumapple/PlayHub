@@ -387,7 +387,9 @@ final class StorageService {
         GameSession(
             playerName: player.name,
             mode: mode,
-            score: score
+            score: score,
+            latitude: player.latitude,
+            longitude: player.longitude
         )
 
 
@@ -571,6 +573,49 @@ final class StorageService {
 
 
 
+    func highScoreForCurrentPlayer(
+        mode: GameMode
+    )
+    -> Int {
+
+
+        guard let player = currentPlayer()
+        else {
+
+
+            return 0
+
+
+        }
+
+
+        return loadHistory()
+            .filter {
+
+
+                $0.playerName == player.name &&
+                $0.mode == mode
+
+
+            }
+            .map {
+
+
+                $0.score
+
+
+            }
+            .max()
+        ??
+        0
+
+
+    }
+
+
+
+
+
 
 
 
@@ -619,6 +664,36 @@ final class StorageService {
 
         UserDefaults.standard.removeObject(
             forKey: historyKey
+        )
+
+
+        var players = loadPlayers()
+
+        for index in players.indices {
+
+            players[index].totalGames = 0
+            players[index].bestScore = 0
+
+        }
+
+        savePlayers(
+            players
+        )
+
+
+        for mode in GameMode.allCases {
+
+            UserDefaults.standard.removeObject(
+                forKey:
+                    "highscore_\(mode.rawValue)"
+            )
+
+        }
+
+
+        NotificationCenter.default.post(
+            name: .gameHistoryCleared,
+            object: nil
         )
 
 

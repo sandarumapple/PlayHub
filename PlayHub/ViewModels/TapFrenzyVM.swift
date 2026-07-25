@@ -10,10 +10,12 @@ import Combine
 @MainActor
 final class TapFrenzyVM: ObservableObject {
 
+    let difficulty: GameDifficulty
+
 
     @Published var score = 0
 
-    @Published var time = 10
+    @Published var time: Int
 
     @Published var gameOver = false
 
@@ -33,7 +35,10 @@ final class TapFrenzyVM: ObservableObject {
 
 
 
-    init() {
+    init(difficulty: GameDifficulty = .medium) {
+
+        self.difficulty = difficulty
+        self.time = difficulty.roundDuration
 
 
         highScore =
@@ -59,7 +64,7 @@ final class TapFrenzyVM: ObservableObject {
 
         score = 0
 
-        time = 10
+        time = difficulty.roundDuration
 
         combo = 1
 

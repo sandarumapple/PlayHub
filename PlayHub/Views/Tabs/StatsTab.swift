@@ -10,38 +10,71 @@ import Charts
 struct StatsTab: View {
 
 
-    @StateObject private var vm = StatsVM()
+    @StateObject private var vm =
+    StatsVM()
 
 
 
-    var gamePerformance: [GamePerformance] {
+    private var gamePerformance: [GamePerformance] {
 
 
         GameMode.allCases.map { mode in
 
 
-            let score =
-            vm.sessions
-                .filter {
-                    $0.mode == mode
-                }
-                .map {
-                    $0.score
-                }
-                .max()
-            ?? 0
-
-
-
-            return GamePerformance(
+            GamePerformance(
                 mode: mode,
-                score: score
+                score: vm.sessions
+                    .filter { $0.mode == mode }
+                    .map(\.score)
+                    .max() ?? 0
             )
+
 
         }
 
+
     }
 
+
+
+    private var averageScore: Int {
+
+
+        guard !vm.sessions.isEmpty else {
+
+            return 0
+
+        }
+
+
+        return vm.sessions
+            .map(\.score)
+            .reduce(0, +) / vm.sessions.count
+
+
+    }
+
+
+
+    private var favoriteGame: GameMode? {
+
+
+        GameMode.allCases.max { first, second in
+
+
+            vm.sessions
+                .filter { $0.mode == first }
+                .count
+            <
+            vm.sessions
+                .filter { $0.mode == second }
+                .count
+
+
+        }
+
+
+    }
 
 
 
@@ -60,40 +93,24 @@ struct StatsTab: View {
 
 
 
-                ScrollView {
+                ScrollView(
+                    showsIndicators: false
+                ) {
 
 
-                    VStack(spacing:25) {
+                    VStack(
+                        alignment: .leading,
+                        spacing: 20
+                    ) {
 
 
-                        header
+                        pageTitle
 
 
-
-                        HStack(spacing:15) {
-
-
-                            statCard(
-                                icon:"gamecontroller.fill",
-                                title:"Games",
-                                value:
-                                    "\(vm.totalGames)"
-                            )
+                        heroCard
 
 
-
-                            statCard(
-                                icon:"trophy.fill",
-                                title:"Best",
-                                value:
-                                    "\(vm.bestScore)"
-                            )
-
-                        }
-
-
-
-
+                        summaryGrid
 
 
 
@@ -103,111 +120,64 @@ struct StatsTab: View {
                             emptyState
 
 
-
-                        } else {
-
+                        }
+                        else {
 
 
                             chartCard
 
 
-
                             scoreList
 
 
+                            historyButton
 
-                            NavigationLink {
-
-
-                                PlayerHistoryView()
-
-
-                            } label: {
-
-
-                                Text(
-                                    "View Full History"
-                                )
-
-                                .font(.headline)
-
-                                .frame(
-                                    maxWidth:.infinity
-                                )
-
-                                .padding()
-
-                                .background(
-                                    Color.blue
-                                )
-
-                                .foregroundStyle(
-                                    .white
-                                )
-
-                                .clipShape(
-                                    RoundedRectangle(
-                                        cornerRadius:18
-                                    )
-                                )
-
-                            }
 
                         }
 
 
                     }
 
-                    .padding()
+                    .padding(.horizontal, 20)
+
+                    .padding(.top, 12)
+
+                    .padding(.bottom, 35)
+
 
                 }
 
 
             }
 
-            .navigationTitle(
-                "Stats"
-            )
 
-            .navigationBarTitleDisplayMode(
-                .large
-            )
+            .toolbar(.hidden, for: .navigationBar)
+
 
         }
+
 
         .onAppear {
 
+
             vm.load()
+
 
         }
 
-    }
+
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .gameHistoryCleared
+            )
+        ) { _ in
 
 
+            vm.load()
 
 
+        }
 
-
-
-
-
-    // MARK: Background
-
-
-    var background: some View {
-
-
-        LinearGradient(
-            colors:[
-                Color.black,
-                Color.blue.opacity(0.3),
-                Color.purple.opacity(0.25)
-            ],
-            startPoint:.topLeading,
-            endPoint:.bottomTrailing
-        )
-
-        .ignoresSafeArea()
 
     }
 
@@ -215,47 +185,96 @@ struct StatsTab: View {
 
 
 
+    // MARK: - Page Title
+
+
+    private var pageTitle: some View {
+
+
+        HStack {
+
+
+            VStack(
+                alignment: .leading,
+                spacing: 5
+            ) {
+
+
+                Text("Stats")
+
+                    .font(
+                        .system(
+                            size: 36,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+
+                    .foregroundStyle(.white)
 
 
 
+                Text("Track your PlayHub performance")
 
-    // MARK: Header
+                    .font(.subheadline)
 
-
-    var header: some View {
-
-
-        VStack(
-            alignment:.leading,
-            spacing:8
-        ){
+                    .foregroundStyle(
+                        .white.opacity(0.58)
+                    )
 
 
-            Text(
-                "Performance"
+            }
+
+
+
+            Spacer()
+
+
+
+            Image(
+                systemName: "chart.xyaxis.line"
             )
 
-            .font(.largeTitle)
-            .bold()
+            .font(
+                .system(
+                    size: 20,
+                    weight: .bold
+                )
+            )
+
             .foregroundStyle(.white)
 
-
-
-            Text(
-                "Your gaming progress"
+            .frame(
+                width: 48,
+                height: 48
             )
 
-            .foregroundStyle(
-                .white.opacity(0.7)
+            .background(
+                .white.opacity(0.12),
+                in: Circle()
             )
+
+            .overlay {
+
+
+                Circle()
+
+                    .stroke(
+                        .white.opacity(0.12),
+                        lineWidth: 1
+                    )
+
+
+            }
 
 
         }
 
         .frame(
-            maxWidth:.infinity,
-            alignment:.leading
+            maxWidth: .infinity,
+            alignment: .leading
         )
+
 
     }
 
@@ -263,72 +282,369 @@ struct StatsTab: View {
 
 
 
+    // MARK: - Background
+
+
+    private var background: some View {
+
+
+        ZStack {
+
+
+            LinearGradient(
+                colors: [
+                    PlayHubTheme.navy,
+                    PlayHubTheme.navyLight
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+
+
+            Circle()
+
+                .fill(
+                    Color.white.opacity(0.12)
+                )
+
+                .frame(
+                    width: 280,
+                    height: 280
+                )
+
+                .blur(
+                    radius: 90
+                )
+
+                .offset(
+                    x: -150,
+                    y: -320
+                )
+
+
+
+            Circle()
+
+                .fill(
+                    Color.white.opacity(0.06)
+                )
+
+                .frame(
+                    width: 280,
+                    height: 280
+                )
+
+                .blur(
+                    radius: 100
+                )
+
+                .offset(
+                    x: 170,
+                    y: 330
+                )
+
+
+        }
+
+        .ignoresSafeArea()
+
+
+    }
 
 
 
 
-    // MARK: Stat Card
+
+    // MARK: - Hero Card
 
 
-    func statCard(
-        icon:String,
-        title:String,
-        value:String
+    private var heroCard: some View {
+
+
+        VStack(
+            alignment: .leading,
+            spacing: 16
+        ) {
+
+
+            HStack {
+
+
+                Label(
+                    "YOUR PROGRESS",
+                    systemImage: "sparkles"
+                )
+
+                .font(
+                    .caption.weight(.bold)
+                )
+
+                .tracking(1)
+
+                .foregroundStyle(
+                    .white.opacity(0.75)
+                )
+
+
+
+                Spacer()
+
+
+
+                Image(
+                    systemName:
+                        "chart.line.uptrend.xyaxis"
+                )
+
+                .font(
+                    .title2.weight(.bold)
+                )
+
+                .foregroundStyle(.white)
+
+                .frame(
+                    width: 44,
+                    height: 44
+                )
+
+                .background(
+                    .white.opacity(0.16),
+                    in: Circle()
+                )
+
+
+            }
+
+
+
+            Text(
+                vm.sessions.isEmpty
+                ? "Your next high score starts here."
+                : "Keep the momentum going."
+            )
+
+            .font(
+                .title2.weight(.bold)
+            )
+
+            .foregroundStyle(.white)
+
+
+
+            HStack(
+                alignment: .lastTextBaseline,
+                spacing: 8
+            ) {
+
+
+                Text("\(vm.bestScore)")
+
+                    .font(
+                        .system(
+                            size: 42,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+
+                    .foregroundStyle(.white)
+
+
+
+                Text("personal best")
+
+                    .font(
+                        .subheadline.weight(.medium)
+                    )
+
+                    .foregroundStyle(
+                        .white.opacity(0.78)
+                    )
+
+
+            }
+
+
+        }
+
+        .padding(22)
+
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
+
+        .background(
+            LinearGradient(
+                colors: [
+                    PlayHubTheme.navyLight,
+                    PlayHubTheme.blue
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(
+                cornerRadius: 28,
+                style: .continuous
+            )
+        )
+
+        .shadow(
+            color: .white.opacity(0.14),
+            radius: 18,
+            y: 10
+        )
+
+
+    }
+
+
+
+
+
+    // MARK: - Summary Grid
+
+
+    private var summaryGrid: some View {
+
+
+        HStack(
+            spacing: 12
+        ) {
+
+
+            metricCard(
+                title: "Games played",
+                value: "\(vm.totalGames)",
+                icon: "gamecontroller.fill",
+                color: .white
+            )
+
+
+
+            metricCard(
+                title: "Average score",
+                value: "\(averageScore)",
+                icon: "scope",
+                color: .white
+            )
+
+
+
+            metricCard(
+                title: "Favourite",
+                value:
+                    favoriteGame?.rawValue ?? "—",
+                icon: "heart.fill",
+                color: .white,
+                compactValue: true
+            )
+
+
+        }
+
+
+    }
+
+
+
+
+
+    private func metricCard(
+        title: String,
+        value: String,
+        icon: String,
+        color: Color,
+        compactValue: Bool = false
     ) -> some View {
 
 
-        VStack(spacing:10){
+        VStack(
+            alignment: .leading,
+            spacing: 14
+        ) {
 
 
             Image(
-                systemName:icon
+                systemName: icon
             )
 
-            .font(.title2)
+            .font(
+                .subheadline.weight(.bold)
+            )
 
-            .foregroundStyle(
-                .yellow
+            .foregroundStyle(color)
+
+            .frame(
+                width: 30,
+                height: 30
+            )
+
+            .background(
+                color.opacity(0.16),
+                in: Circle()
             )
 
 
 
             Text(value)
 
-            .font(.title)
-            .bold()
-            .foregroundStyle(.white)
+                .font(
+                    compactValue
+                    ? .subheadline.weight(.bold)
+                    : .title2.weight(.bold)
+                )
+
+                .lineLimit(1)
+
+                .minimumScaleFactor(0.65)
+
+                .foregroundStyle(.white)
 
 
 
             Text(title)
 
-            .font(.caption)
+                .font(.caption)
 
-            .foregroundStyle(
-                .white.opacity(0.7)
-            )
+                .foregroundStyle(
+                    .white.opacity(0.58)
+                )
 
 
         }
 
         .frame(
-            maxWidth:.infinity
+            maxWidth: .infinity,
+            alignment: .leading
         )
 
-        .padding()
-
-
+        .padding(14)
 
         .background(
-            .ultraThinMaterial
-        )
-
-
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius:22
+            .white.opacity(0.09),
+            in: RoundedRectangle(
+                cornerRadius: 20,
+                style: .continuous
             )
         )
+
+        .overlay {
+
+
+            RoundedRectangle(
+                cornerRadius: 20,
+                style: .continuous
+            )
+
+            .stroke(
+                .white.opacity(0.1),
+                lineWidth: 1
+            )
+
+
+        }
 
 
     }
@@ -337,88 +653,157 @@ struct StatsTab: View {
 
 
 
+    // MARK: - Chart Card
 
 
-
-
-    // MARK: Chart
-
-
-    var chartCard: some View {
+    private var chartCard: some View {
 
 
         VStack(
-            alignment:.leading,
-            spacing:15
-        ){
+            alignment: .leading,
+            spacing: 18
+        ) {
 
 
-            Text(
-                "Highest Scores"
-            )
-
-            .font(.title3.bold())
-            .foregroundStyle(.white)
+            HStack {
 
 
-
-            Chart {
-
-
-                ForEach(
-                    gamePerformance
-                ){ item in
+                VStack(
+                    alignment: .leading,
+                    spacing: 4
+                ) {
 
 
+                    Text("High-score board")
 
-                    BarMark(
+                        .font(
+                            .headline.weight(.bold)
+                        )
 
-                        x:
-                            .value(
-                                "Score",
-                                item.score
-                            ),
+                        .foregroundStyle(.white)
 
 
-                        y:
-                            .value(
-                                "Game",
-                                item.mode.rawValue
-                            )
 
+                    Text(
+                        "Your best score in each game"
                     )
+
+                    .font(.caption)
 
                     .foregroundStyle(
-                        color(
-                            for:item.mode
-                        )
+                        .white.opacity(0.58)
                     )
+
+
+                }
+
+
+
+                Spacer()
+
+
+
+                Image(
+                    systemName: "chart.bar.fill"
+                )
+
+                .foregroundStyle(.white)
+
+
+            }
+
+
+
+            Chart(
+                gamePerformance
+            ) { item in
+
+
+                BarMark(
+                    x: .value(
+                        "Score",
+                        item.score
+                    ),
+                    y: .value(
+                        "Game",
+                        item.mode.rawValue
+                    )
+                )
+
+                .foregroundStyle(
+                    color(
+                        for: item.mode
+                    ).gradient
+                )
+
+                .cornerRadius(7)
+
+                .annotation(
+                    position: .trailing
+                ) {
+
+
+                    Text("\(item.score)")
+
+                        .font(
+                            .caption.weight(.bold)
+                        )
+
+                        .foregroundStyle(
+                            .white.opacity(0.8)
+                        )
+
 
                 }
 
 
             }
 
-            .frame(
-                height:220
-            )
+            .chartXAxis(.hidden)
+
+            .chartYAxis {
+
+
+                AxisMarks { value in
+
+
+                    AxisValueLabel {
+
+
+                        if let game =
+                            value.as(String.self) {
+
+
+                            Text(game)
+
+                                .font(
+                                    .caption.weight(.medium)
+                                )
+
+                                .foregroundStyle(
+                                    .white.opacity(0.75)
+                                )
+
+
+                        }
+
+
+                    }
+
+
+                }
+
+
+            }
+
+            .frame(height: 185)
 
 
         }
 
+        .padding(20)
 
-        .padding()
-
-
-        .background(
-            .ultraThinMaterial
-        )
-
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius:22
-            )
-        )
+        .glassCard()
 
 
     }
@@ -427,80 +812,97 @@ struct StatsTab: View {
 
 
 
+    // MARK: - Score List
 
 
-
-
-    // MARK: Score List
-
-
-    var scoreList: some View {
+    private var scoreList: some View {
 
 
         VStack(
-            alignment:.leading,
-            spacing:15
-        ){
+            alignment: .leading,
+            spacing: 12
+        ) {
 
 
+            Text("Game records")
 
-            Text(
-                "Game Records"
-            )
+                .font(
+                    .headline.weight(.bold)
+                )
 
-            .font(.title3.bold())
-            .foregroundStyle(.white)
-
+                .foregroundStyle(.white)
 
 
 
             ForEach(
                 gamePerformance
-            ){ item in
+            ) { item in
 
 
-
-                HStack{
+                HStack(
+                    spacing: 14
+                ) {
 
 
                     Image(
-                        systemName:
-                            item.mode.icon
+                        systemName: item.mode.icon
                     )
 
-                    .font(.title2)
+                    .font(.headline)
 
                     .foregroundStyle(
                         color(
-                            for:item.mode
+                            for: item.mode
+                        )
+                    )
+
+                    .frame(
+                        width: 44,
+                        height: 44
+                    )
+
+                    .background(
+                        color(
+                            for: item.mode
+                        ).opacity(0.16),
+                        in: RoundedRectangle(
+                            cornerRadius: 14,
+                            style: .continuous
                         )
                     )
 
 
 
                     VStack(
-                        alignment:.leading
-                    ){
+                        alignment: .leading,
+                        spacing: 3
+                    ) {
 
 
                         Text(
                             item.mode.rawValue
                         )
 
-                        .bold()
+                        .font(
+                            .subheadline.weight(.semibold)
+                        )
+
                         .foregroundStyle(.white)
 
 
 
                         Text(
-                            "Highest Score"
+                            item.score == 0
+                            ? "No score yet"
+                            : "Highest score"
                         )
 
                         .font(.caption)
 
                         .foregroundStyle(
-                            .white.opacity(0.6)
+                            .white.opacity(0.55)
                         )
+
 
                     }
 
@@ -514,25 +916,26 @@ struct StatsTab: View {
                         "\(item.score)"
                     )
 
-                    .font(.title2)
-                    .bold()
-                    .foregroundStyle(.white)
+                    .font(
+                        .title3.weight(.bold)
+                    )
 
+                    .foregroundStyle(
+                        item.score == 0
+                        ? .white.opacity(0.45)
+                        : .white
+                    )
 
 
                 }
 
-
-                .padding()
-
+                .padding(14)
 
                 .background(
-                    .ultraThinMaterial
-                )
-
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius:18
+                    .white.opacity(0.07),
+                    in: RoundedRectangle(
+                        cornerRadius: 18,
+                        style: .continuous
                     )
                 )
 
@@ -549,63 +952,50 @@ struct StatsTab: View {
 
 
 
+    // MARK: - History Button
 
 
+    private var historyButton: some View {
 
 
-    // MARK: Empty
+        NavigationLink {
 
 
-    var emptyState: some View {
+            PlayerHistoryView()
 
 
-        VStack(spacing:15){
+        } label: {
 
 
-            Image(
-                systemName:
-                    "chart.bar"
+            Label(
+                "View full history",
+                systemImage:
+                    "clock.arrow.circlepath"
             )
 
-            .font(.system(size:60))
+            .font(.headline)
 
-            .foregroundStyle(
-                .white.opacity(0.6)
+            .frame(
+                maxWidth: .infinity
             )
 
-
-
-            Text(
-                "No games played yet"
+            .padding(
+                .vertical,
+                16
             )
 
-            .font(.title3.bold())
             .foregroundStyle(.white)
 
-
-
-            Text(
-                "Start playing to see your stats"
-            )
-
-            .foregroundStyle(
-                .white.opacity(0.7)
+            .background(
+                .white.opacity(0.13),
+                in: RoundedRectangle(
+                    cornerRadius: 18,
+                    style: .continuous
+                )
             )
 
 
         }
-
-        .padding(40)
-
-        .background(
-            .ultraThinMaterial
-        )
-
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius:25
-            )
-        )
 
 
     }
@@ -614,12 +1004,85 @@ struct StatsTab: View {
 
 
 
+    // MARK: - Empty State
+
+
+    private var emptyState: some View {
+
+
+        VStack(
+            spacing: 14
+        ) {
+
+
+            Image(
+                systemName:
+                    "chart.bar.xaxis"
+            )
+
+            .font(
+                .system(
+                    size: 44,
+                    weight: .light
+                )
+            )
+
+            .foregroundStyle(.white)
+
+
+
+            Text(
+                "No games played yet"
+            )
+
+            .font(
+                .title3.weight(.bold)
+            )
+
+            .foregroundStyle(.white)
+
+
+
+            Text(
+                "Play your first challenge to build your dashboard."
+            )
+
+            .font(.subheadline)
+
+            .multilineTextAlignment(
+                .center
+            )
+
+            .foregroundStyle(
+                .white.opacity(0.62)
+            )
+
+
+        }
+
+        .frame(
+            maxWidth: .infinity
+        )
+
+        .padding(
+            .vertical,
+            42
+        )
+
+        .glassCard()
+
+
+    }
 
 
 
 
-    func color(
-        for mode:GameMode
+
+    // MARK: - Game Colors
+
+
+    private func color(
+        for mode: GameMode
     ) -> Color {
 
 
@@ -628,20 +1091,23 @@ struct StatsTab: View {
 
         case .tapFrenzy:
 
-            return .blue
+            return .white
+
 
 
         case .lightItUp:
 
-            return .orange
+            return .white
+
 
 
         case .quizRush:
 
-            return .green
+            return .white
 
 
         }
+
 
     }
 
@@ -652,14 +1118,60 @@ struct StatsTab: View {
 
 
 
+private extension View {
 
-struct GamePerformance: Identifiable {
+
+    func glassCard() -> some View {
 
 
-    let id = UUID()
+        background(
+            .ultraThinMaterial,
+            in: RoundedRectangle(
+                cornerRadius: 24,
+                style: .continuous
+            )
+        )
 
-    let mode: GameMode
+        .overlay {
 
-    let score: Int
+
+            RoundedRectangle(
+                cornerRadius: 24,
+                style: .continuous
+            )
+
+            .stroke(
+                .white.opacity(0.11),
+                lineWidth: 1
+            )
+
+
+        }
+
+
+    }
+
+
+}
+
+
+
+
+
+private struct GamePerformance:
+Identifiable {
+
+
+    let id =
+    UUID()
+
+
+    let mode:
+    GameMode
+
+
+    let score:
+    Int
+
 
 }

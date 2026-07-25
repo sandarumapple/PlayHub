@@ -11,13 +11,15 @@ import Combine
 @MainActor
 final class LightItUpVM: ObservableObject {
 
+    let difficulty: GameDifficulty
+
 
     // MARK: Game State
 
 
     @Published var score = 0
 
-    @Published var timeRemaining = 60
+    @Published var timeRemaining: Int
 
     @Published var activeCards:[Int] = []
 
@@ -34,10 +36,7 @@ final class LightItUpVM: ObservableObject {
     // MARK: High Score
 
 
-    @AppStorage(
-        "lightItUpHighScore"
-    )
-    var highScore = 0
+    @Published private(set) var highScore = 0
 
 
 
@@ -47,6 +46,16 @@ final class LightItUpVM: ObservableObject {
     private var timer: Timer?
 
     private var lightTask: DispatchWorkItem?
+
+
+    init(difficulty: GameDifficulty = .medium) {
+
+        self.difficulty = difficulty
+        self.timeRemaining = difficulty.lightRoundDuration
+
+        refreshHighScore()
+
+    }
 
 
 
@@ -64,10 +73,13 @@ final class LightItUpVM: ObservableObject {
         stopGame()
 
 
+        refreshHighScore()
+
+
 
         score = 0
 
-        timeRemaining = 60
+        timeRemaining = difficulty.lightRoundDuration
 
         currentLevel = 1
 
@@ -395,7 +407,7 @@ final class LightItUpVM: ObservableObject {
 
         DispatchQueue.main.asyncAfter(
             deadline:
-                .now() + lightDuration,
+                .now() + lightDuration * difficulty.lightSpeedMultiplier,
             execute:task
         )
 
@@ -431,17 +443,6 @@ final class LightItUpVM: ObservableObject {
 
 
             score += 1
-
-
-
-
-            if score > highScore {
-
-
-                highScore = score
-
-
-            }
 
 
 
@@ -506,13 +507,7 @@ final class LightItUpVM: ObservableObject {
 
 
 
-        if score > highScore {
-
-
-            highScore = score
-
-
-        }
+        refreshHighScore()
 
 
 
@@ -523,6 +518,17 @@ final class LightItUpVM: ObservableObject {
             name:
                 .gameSaved,
             object:nil
+        )
+
+
+    }
+
+
+    private func refreshHighScore(){
+
+
+        highScore = StorageService.shared.highScoreForCurrentPlayer(
+            mode:.lightItUp
         )
 
 

@@ -9,7 +9,9 @@ import SwiftUI
 struct PlayerSelectView: View {
 
 
-    @StateObject private var vm = PlayerVM()
+    // Use the app-wide session model. Creating a second PlayerVM here meant the
+    // selection screen updated, but ContentView never saw the selected player.
+    @EnvironmentObject private var vm: PlayerVM
 
 
     @State private var showAddPlayer = false
@@ -565,8 +567,8 @@ struct PlayerSelectView: View {
 
 #Preview {
 
-
     PlayerSelectView()
+        .environmentObject(PlayerVM())
 
 
 }

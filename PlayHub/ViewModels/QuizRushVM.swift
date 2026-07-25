@@ -11,6 +11,8 @@ import Combine
 @MainActor
 final class QuizRushVM: ObservableObject {
 
+    let difficulty: GameDifficulty
+
 
 
     enum GameState {
@@ -85,7 +87,9 @@ final class QuizRushVM: ObservableObject {
 
 
 
-    init(){
+    init(difficulty: GameDifficulty = .medium){
+
+        self.difficulty = difficulty
 
 
         highScore =
@@ -116,7 +120,10 @@ final class QuizRushVM: ObservableObject {
 
             questions =
             try await TriviaAPI.shared
-                .fetchQuestions()
+                .fetchQuestions(
+                    difficulty: difficulty,
+                    amount: difficulty.questionCount
+                )
 
 
 
